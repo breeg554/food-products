@@ -1,14 +1,15 @@
 import jwt from "jsonwebtoken";
 import ApiError from "../utils/ApiError.js";
-import { SECRET } from "../config/jwt.js";
+import { ACCESS_TOKEN_SECRET } from "../config/jwt.js";
 
 const verifyToken = (req, res, next) => {
   const token = req.header("Authorization");
+
   if (!token) return next(new ApiError("Access denied", 401));
 
   try {
     const userToken = token.substring(7, token.length);
-    const isVerified = jwt.verify(userToken, SECRET);
+    const isVerified = jwt.verify(userToken, ACCESS_TOKEN_SECRET);
 
     if (isVerified) {
       req.user = {
@@ -19,7 +20,7 @@ const verifyToken = (req, res, next) => {
     }
   } catch (err) {
     if (err.name === "TokenExpiredError") {
-      return next(new ApiError("Token expired", 401));
+      return next(new ApiError("Token expired", 403));
     } else {
       return next(new ApiError("Auth failed", 401));
     }

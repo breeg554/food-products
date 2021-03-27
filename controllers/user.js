@@ -1,8 +1,45 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
+import Token from "../models/token.js";
 import ApiError from "../utils/ApiError.js";
-import { SECRET } from "../config/jwt.js";
+import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from "../config/jwt.js";
+
+const generateAccessToken = (payload) => {
+  return jwt.sign({ data: payload }, ACCESS_TOKEN_SECRET, {
+    expiresIn: "10sec",
+  });
+};
+export const token = async (req, res, next) => {
+  try {
+    let refreshToken = req.body.token;
+    if (!refreshToken) throw new ApiError("Access denied", 401);
+    Token.findOne({ token: refreshToken }).exec((err, token) => {
+      if (err || !token) return next(new ApiError("Access denied", 403));
+
+      jwt.verify(token.token, REFRESH_TOKEN_SECRET, (err, user) => {
+        if (err) return next(new ApiError("Access denied", 403));
+
+        const accessToken = generateAccessToken(user.data);
+        res.status(200).json({ accessToken });
+      });
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+export const logout = async (req, res, next) => {
+  try {
+    let refreshToken = req.body.token;
+    if (!refreshToken) throw new ApiError("Bad request", 400);
+    Token.deleteOne({ token: refreshToken }).exec((err, token) => {
+      if (err) return next(new ApiError("Access denied", 403));
+      res.status(204).json();
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 export const signUp = async (req, res, next) => {
   try {
@@ -26,6 +63,7 @@ export const signUp = async (req, res, next) => {
 export const signIn = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+
     const user = await User.findOne({ email });
 
     if (!user) throw new ApiError("User not found", 404);
@@ -39,9 +77,11 @@ export const signIn = async (req, res, next) => {
       role: user.role,
     };
 
-    const token = jwt.sign({ data: payload }, SECRET, {
-      expiresIn: "1h",
-    });
+    const accessToken = generateAccessToken(payload);
+    const refreshToken = jwt.sign({ data: payload }, REFRESH_TOKEN_SECRET);
+
+    const NewRefToken = new Token({ _userId: user._id, token: refreshToken });
+    NewRefToken.save();
 
     const resData = {
       user: {
@@ -51,7 +91,8 @@ export const signIn = async (req, res, next) => {
         role: user.role,
         _id: user._id,
       },
-      token,
+      accessToken,
+      refreshToken,
     };
 
     res.status(200).json(resData);

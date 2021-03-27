@@ -6,5 +6,5 @@ const router = express.Router();
 
 router.use("/category", category);
 router.use("/product", product);
-router.use("/user", user);
+router.use("/", user);
 export default router;
