@@ -31,7 +31,7 @@ export const token = async (req, res, next) => {
 
         const accessToken = generateAccessToken(user.data);
 
-        res.cookie("accessToken", accessToken, { httpOnly: true });
+        res.cookie("accessToken", accessToken, COOKIE_OPTIONS);
         res.status(200).json();
       });
     });
