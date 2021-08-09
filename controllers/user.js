@@ -8,6 +8,12 @@ import ApiError from "../utils/ApiError.js";
 import { getUserDataForResponse } from "../services/user.js";
 import { ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET } from "../config/jwt.js";
 
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  sameSite: "none",
+  secure: true,
+};
+
 const generateAccessToken = (payload) => {
   return jwt.sign({ data: payload }, ACCESS_TOKEN_SECRET, {
     expiresIn: "60sec",
@@ -118,8 +124,8 @@ export const signInAnonymous = async (req, res, next) => {
     const NewRefToken = new Token({ token: refreshToken, _userId: newAnonymousUser._id });
     NewRefToken.save();
 
-    res.cookie("refreshToken", refreshToken, { httpOnly: true, sameSite: "none" });
-    res.cookie("accessToken", accessToken, { httpOnly: true, sameSite: "none" });
+    res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
+    res.cookie("accessToken", accessToken, COOKIE_OPTIONS);
 
     const resData = {
       user: getUserDataForResponse(newAnonymousUser),
@@ -159,8 +165,8 @@ export const signIn = async (req, res, next) => {
     const resData = {
       user: getUserDataForResponse(user),
     };
-    res.cookie("refreshToken", refreshToken, { httpOnly: true, sameSite: "none" });
-    res.cookie("accessToken", accessToken, { httpOnly: true, sameSite: "none" });
+    res.cookie("refreshToken", refreshToken, COOKIE_OPTIONS);
+    res.cookie("accessToken", accessToken, COOKIE_OPTIONS);
     res.status(200).json(resData);
   } catch (err) {
     next(err);
