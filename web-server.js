@@ -6,7 +6,7 @@ import bodyParser from "body-parser";
 import csrf from "csurf";
 import cookieParser from "cookie-parser";
 import router from "./routes/index.js";
-import { port } from "./config/web-server.js";
+import { port, origin } from "./config/web-server.js";
 import { adminBro, adminRouter } from "./adminBro.js";
 
 let httpServer;
@@ -20,7 +20,7 @@ export const initialize = () => {
     app.use(morgan("combined"));
     app.use(express.json());
     app.use(cookieParser());
-    app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
+    app.use(cors({ credentials: true, origin: origin }));
     // const csrfProtection = csrf({
     //   cookie: true,
     // });
