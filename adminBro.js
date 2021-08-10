@@ -1,6 +1,7 @@
 import AdminBro from "admin-bro";
 import AdminBroExpress from "@admin-bro/express";
 import AdminBroMongoose from "@admin-bro/mongoose";
+import bcrypt from "bcrypt";
 import User from "./models/user.js";
 import UserStats from "./models/userStats.js";
 import Product from "./models/product.js";
@@ -8,6 +9,7 @@ import Tags from "./models/tags.js";
 import UnitOfMeasure from "./models/unitOfMeasure.js";
 import ProductCategories from "./models/productCategories.js";
 import Token from "./models/token.js";
+import { ACCESS_TOKEN_SECRET } from "./config/jwt.js";
 
 AdminBro.registerAdapter(AdminBroMongoose);
 
@@ -73,6 +75,18 @@ const adminBro = new AdminBro({
   ],
 });
 
-const adminRouter = AdminBroExpress.buildRouter(adminBro);
+const adminRouter = AdminBroExpress.buildAuthenticatedRouter(adminBro, {
+  authenticate: async (email, password) => {
+    const user = await User.findOne({ email });
+    if (user && user.role === "admin") {
+      const matched = await bcrypt.compare(password, user.password);
+      if (matched) {
+        return user;
+      }
+    }
+    return false;
+  },
+  cookiePassword: ACCESS_TOKEN_SECRET,
+});
 
 export { adminBro, adminRouter };
